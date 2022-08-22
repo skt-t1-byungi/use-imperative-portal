@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.*/
+!.github/
+*-lock.yaml
+*-lock.json
+*.lock
+*.log

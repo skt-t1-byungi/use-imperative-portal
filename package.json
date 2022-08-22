@@ -1,0 +1,12 @@
+{
+    "name": "use-imperative-portal",
+    "version": "0.0.0",
+    "devDependencies": {
+        "@types/react": "^18.0.17",
+        "react": "^18.2.0",
+        "typescript": "^4.7.4"
+    },
+    "peerDependencies": {
+        "react": "^18.2.0"
+    }
+}
