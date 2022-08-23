@@ -10,14 +10,16 @@ import {
     useRef,
 } from 'react'
 
-type Renderer = () => ReactNode
+type Renderer = (...args: any) => ReactNode
+
+export interface Portal<UpdaterArgs extends any[] = []> {
+    readonly isClosed: boolean
+    update(...args: UpdaterArgs): void
+    close(): void
+}
 export type PortalOpener = <R extends Renderer | ReactNode>(
     render: R
-) => {
-    readonly isClosed: boolean
-    update: (...args: R extends Renderer ? Parameters<R> : []) => void
-    close: () => void
-}
+) => Portal<R extends Renderer ? Parameters<R> : []>
 
 const CONTEXT_KEY = Symbol('context')
 
@@ -52,7 +54,7 @@ export function createPortalContext() {
 
                 const api = {
                     get isClosed() {
-                        return portalsById.has(id)
+                        return !portalsById.has(id)
                     },
                     update(...args: any) {
                         if (api.isClosed) {
@@ -99,11 +101,11 @@ const defaultPortalContext = createPortalContext()
 export const PortalProvider = defaultPortalContext.Provider
 
 export function useImperativePortal(context = defaultPortalContext) {
-    const open = useContext(context[CONTEXT_KEY])
-    if (!open) {
+    const openPortal = useContext(context[CONTEXT_KEY])
+    if (!openPortal) {
         throw new Error('`useImperativePortal` must be used within PortalProvider')
     }
-    return open
+    return openPortal
 }
 
 function useForceUpdate() {
