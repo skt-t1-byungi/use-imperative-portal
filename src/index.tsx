@@ -14,6 +14,7 @@ type Renderer = () => ReactNode
 export type PortalOpener = <R extends Renderer | ReactNode>(
     render: R
 ) => {
+    readonly isClosed: boolean
     update: (...args: R extends Renderer ? Parameters<R> : []) => void
     close: () => void
 }
