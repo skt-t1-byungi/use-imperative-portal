@@ -2,10 +2,22 @@
 
 Imperative React hooks for Portals.
 
+> 🚧 WIP
+
 ## Example
 
 ```jsx
-import { useImperativePortal } from 'use-imperative-portal'
+import { PortalProvider, useImperativePortal } from 'use-imperative-portal'
+
+function App() {
+    return (
+        <main>
+            <PortalProvider>
+                <DemoButton />
+            </PortalProvider>
+        </main>
+    )
+}
 
 function DemoButton() {
     const openPortal = useImperativePortal()
@@ -13,19 +25,24 @@ function DemoButton() {
     return (
         <button
             onClick={async () => {
+                // 컴포넌트가 렌더링된다.
                 const portal = openPortal((text = 'loading...') => (
-                    <Modal onClose={() => portal.close()}>
+                    <Modal
+                        onRequestClose={() => {
+                            portal.close() // 👈 Modal is removed because the portal is closed.
+                        }}
+                    >
                         <p>{text}</p>
                     </Modal>
                 ))
 
-                await delay(1000)
-                if (portal.isClosed) return
+                await asyncJob()
 
-                portal.update('updated.') // => Modal changes from "loading ..." to "updated."
+                if (portal.isClosed) {
+                    return
+                }
 
-                await delay(1000)
-                if (!portal.isClosed) portal.close()
+                portal.update('updated!') // 👉 Modal changes from "loading ..." to "updated!"
             }}
         >
             DEMO
