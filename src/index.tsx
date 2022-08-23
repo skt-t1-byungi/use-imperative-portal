@@ -10,7 +10,7 @@ import {
     useRef,
 } from 'react'
 
-type Renderer = (props: any) => ReactNode
+type Renderer = () => ReactNode
 export type PortalOpener = <R extends Renderer | ReactNode>(
     render: R
 ) => {
@@ -28,7 +28,7 @@ export function createPortalContext() {
 
         Provider({ children }: PropsWithChildren) {
             const portalsById: Map<number, ReactElement> = (useRef<any>().current ??= new Map())
-            const forceUpdate = useReducer(() => ({}), {})[1]
+            const forceUpdate = useForceUpdate()
             const uidRef = useRef(0)
 
             function nextId() {
@@ -41,29 +41,37 @@ export function createPortalContext() {
                 }
             }
 
-            const open = (useRef<PortalOpener>().current ??= render => {
+            const openPortal = (useRef<PortalOpener>().current ??= render => {
                 const id = nextId()
-                const propsRef: MutableRefObject<any> = createRef()
+                const argsRef: MutableRefObject<any> = createRef()
                 const updateRef: MutableRefObject<(() => void) | null> = createRef()
 
-                portalsById.set(id, <Portal key={id} render={render} propsRef={propsRef} updateRef={updateRef} />)
+                portalsById.set(id, <Portal key={id} render={render} argsRef={argsRef} updateRef={updateRef} />)
                 forceUpdate()
 
-                return {
-                    update(props?: any) {
-                        propsRef.current = props
+                const api = {
+                    get isClosed() {
+                        return portalsById.has(id)
+                    },
+                    update(...args: any) {
+                        if (api.isClosed) {
+                            throw new Error('Portal is closed')
+                        }
+                        argsRef.current = args
                         updateRef.current?.()
                     },
                     close() {
                         portalsById.delete(id)
-                        propsRef.current = updateRef.current = null
+                        argsRef.current = updateRef.current = null
                         forceUpdate()
                     },
                 }
+
+                return api
             })
 
             return (
-                <context.Provider value={open}>
+                <context.Provider value={openPortal}>
                     {children}
                     {Array.from(portalsById.values())}
                 </context.Provider>
@@ -74,16 +82,15 @@ export function createPortalContext() {
 
 function Portal({
     render,
-    propsRef,
+    argsRef,
     updateRef,
 }: {
     render: Renderer | ReactNode
-    propsRef: MutableRefObject<any>
+    argsRef: MutableRefObject<any>
     updateRef: MutableRefObject<any>
 }) {
-    const forceUpdate = useReducer(() => ({}), {})[1]
-    updateRef.current ??= forceUpdate
-    return <>{typeof render === 'function' ? render(propsRef.current ?? undefined) : render}</>
+    updateRef.current = useForceUpdate()
+    return <>{typeof render === 'function' ? render(...((argsRef.current ?? []) as Parameters<Renderer>)) : render}</>
 }
 
 const defaultPortalContext = createPortalContext()
@@ -96,4 +103,8 @@ export function useImperativePortal(context = defaultPortalContext) {
         throw new Error('`useImperativePortal` must be used within PortalProvider')
     }
     return open
+}
+
+function useForceUpdate() {
+    return useReducer(() => ({}), {})[1]
 }

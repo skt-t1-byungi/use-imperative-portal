@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "target": "ESNext",
         "jsx": "react-jsx",
         "lib": ["ESNext"],
         "strict": true,
