@@ -81,7 +81,8 @@ function Portal({
     propsRef: MutableRefObject<any>
     updateRef: MutableRefObject<any>
 }) {
-    updateRef.current ??= useReducer(() => ({}), {})[1]
+    const forceUpdate = useReducer(() => ({}), {})[1]
+    updateRef.current ??= forceUpdate
     return <>{typeof render === 'function' ? render(propsRef.current ?? undefined) : render}</>
 }
 
