@@ -80,6 +80,11 @@ export function createPortalContext() {
                 </context.Provider>
             )
         },
+
+        Endpoint() {
+            const forceUpdate = useForceUpdate()
+            // wip
+        },
     }
 }
 
