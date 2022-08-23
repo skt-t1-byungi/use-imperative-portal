@@ -1,5 +1,7 @@
 # use-imperative-portal
 
+Imperative React hooks for Portals.
+
 ## Example
 
 ```jsx
@@ -31,3 +33,7 @@ function DemoButton() {
     )
 }
 ```
+
+## LICENSE
+
+MIT
