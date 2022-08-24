@@ -59,6 +59,7 @@ function newInternalContextValue() {
             },
             close() {
                 portalsMap.delete(id)
+                argsRef.current = updaterRef.current = null
                 dispatch()
             },
         }
