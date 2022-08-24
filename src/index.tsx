@@ -6,6 +6,8 @@ import {
     ReactElement,
     ReactNode,
     useContext,
+    useId,
+    useLayoutEffect,
     useReducer,
     useRef,
 } from 'react'
@@ -17,100 +19,118 @@ export interface Portal<UpdaterArgs extends any[] = []> {
     update(...args: UpdaterArgs): void
     close(): void
 }
+
 export type PortalOpener = <R extends Renderer | ReactNode>(
     render: R
 ) => Portal<R extends Renderer ? Parameters<R> : []>
 
-const CONTEXT_KEY = Symbol('context')
+function newInternalContextValue() {
+    let uid = 0
+    const portalsMap = new Map<number, ReactElement>()
+    const listenersMap = new Map<string, () => void>()
 
-export function createPortalContext() {
-    const context = createContext<PortalOpener | null>(null)
-
-    return {
-        [CONTEXT_KEY]: context,
-
-        Provider({ children }: PropsWithChildren) {
-            const portalsById: Map<number, ReactElement> = (useRef<any>().current ??= new Map())
-            const forceUpdate = useForceUpdate()
-            const uidRef = useRef(0)
-
-            function nextId() {
-                try {
-                    return uidRef.current
-                } finally {
-                    if (!Number.isSafeInteger(++uidRef.current)) {
-                        uidRef.current = Number.MIN_SAFE_INTEGER
-                    }
-                }
-            }
-
-            const openPortal = (useRef<PortalOpener>().current ??= render => {
-                const id = nextId()
-                const argsRef: MutableRefObject<any> = createRef()
-                const updateRef: MutableRefObject<(() => void) | null> = createRef()
-
-                portalsById.set(id, <Portal key={id} render={render} argsRef={argsRef} updateRef={updateRef} />)
-                forceUpdate()
-
-                const api = {
-                    get isClosed() {
-                        return !portalsById.has(id)
-                    },
-                    update(...args: any) {
-                        if (api.isClosed) {
-                            throw new Error('Portal is closed')
-                        }
-                        argsRef.current = args
-                        updateRef.current?.()
-                    },
-                    close() {
-                        portalsById.delete(id)
-                        argsRef.current = updateRef.current = null
-                        forceUpdate()
-                    },
-                }
-
-                return api
-            })
-
-            return (
-                <context.Provider value={openPortal}>
-                    {children}
-                    {Array.from(portalsById.values())}
-                </context.Provider>
-            )
-        },
-
-        Endpoint() {
-            const forceUpdate = useForceUpdate()
-            // wip
-        },
+    function dispatch() {
+        for (const fn of listenersMap.values()) fn()
     }
+
+    const openPortal: PortalOpener = render => {
+        const id = uid++
+        // It is not strict but expected to be enough.
+        if (!Number.isSafeInteger(uid)) {
+            uid = Number.MIN_SAFE_INTEGER
+        }
+
+        const argsRef: MutableRefObject<any> = createRef()
+        const updaterRef: MutableRefObject<(() => void) | null> = createRef()
+
+        portalsMap.set(id, <Portal key={id} render={render} argsRef={argsRef} updaterRef={updaterRef} />)
+        dispatch()
+
+        return {
+            get isClosed() {
+                return !portalsMap.has(id)
+            },
+            update(...args: any) {
+                if (!portalsMap.has(id)) {
+                    throw new Error('Portal is closed')
+                }
+                argsRef.current = args
+                updaterRef.current?.()
+            },
+            close() {
+                portalsMap.delete(id)
+                dispatch()
+            },
+        }
+    }
+
+    return { portalsMap, listenersMap, openPortal }
 }
 
 function Portal({
     render,
     argsRef,
-    updateRef,
+    updaterRef,
 }: {
     render: Renderer | ReactNode
     argsRef: MutableRefObject<any>
-    updateRef: MutableRefObject<any>
+    updaterRef: MutableRefObject<any>
 }) {
-    updateRef.current = useForceUpdate()
+    updaterRef.current = useForceUpdate()
     return <>{typeof render === 'function' ? render(...((argsRef.current ?? []) as Parameters<Renderer>)) : render}</>
 }
 
-const defaultPortalContext = createPortalContext()
+const INTERNAL_CONTEXT_KEY = Symbol('context')
 
-export const PortalProvider = defaultPortalContext.Provider
+type InternalContextValue = ReturnType<typeof newInternalContextValue>
+
+export function createPortalContext() {
+    const ctx = createContext<InternalContextValue | null>(null)
+
+    function Provider({ children, withEndpoint = true }: PropsWithChildren<{ withEndpoint?: boolean }>) {
+        return (
+            <ctx.Provider value={(useRef<InternalContextValue>().current ??= newInternalContextValue())}>
+                {children}
+                {withEndpoint && <Endpoint />}
+            </ctx.Provider>
+        )
+    }
+
+    function Endpoint() {
+        const value = useContext(ctx)
+        if (!value) {
+            throw new Error('`Endpoint` must be used within PortalProvider')
+        }
+
+        const { listenersMap, portalsMap } = value
+        const id = useId()
+        const forceUpdate = useForceUpdate()
+
+        if (!listenersMap.has(id)) {
+            listenersMap.set(id, forceUpdate)
+        }
+        useLayoutEffect(
+            () => () => {
+                listenersMap.delete(id)
+            },
+            []
+        )
+
+        return <>{Array.from(portalsMap.values())}</>
+    }
+
+    return { [INTERNAL_CONTEXT_KEY]: ctx, Provider, Endpoint }
+}
+
+const defaultPortalContext = createPortalContext()
+export const { Provider: PortalProvider, Endpoint: PortalEndpoint } = defaultPortalContext
 
 export function useImperativePortal(context = defaultPortalContext) {
-    const openPortal = useContext(context[CONTEXT_KEY])
-    if (!openPortal) {
+    const value = useContext(context[INTERNAL_CONTEXT_KEY])
+    if (!value) {
         throw new Error('`useImperativePortal` must be used within PortalProvider')
     }
-    return openPortal
+    return value.openPortal
 }
 
 function useForceUpdate() {

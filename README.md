@@ -11,11 +11,9 @@ import { PortalProvider, useImperativePortal } from 'use-imperative-portal'
 
 function App() {
     return (
-        <main>
-            <PortalProvider>
-                <DemoButton />
-            </PortalProvider>
-        </main>
+        <PortalProvider>
+            <DemoButton />
+        </PortalProvider>
     )
 }
 
@@ -25,7 +23,6 @@ function DemoButton() {
     return (
         <button
             onClick={async () => {
-                // 컴포넌트가 렌더링된다.
                 const portal = openPortal((text = 'loading...') => (
                     <Modal
                         onRequestClose={() => {
