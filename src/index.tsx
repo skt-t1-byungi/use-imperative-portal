@@ -107,15 +107,19 @@ export function createPortalContext() {
         const id = useId()
         const forceUpdate = useForceUpdate()
 
+        // Defense in advance in case the portal opens during the render phase.
         if (!listenersMap.has(id)) {
             listenersMap.set(id, forceUpdate)
         }
-        useLayoutEffect(
-            () => () => {
-                listenersMap.delete(id)
-            },
-            []
-        )
+        useLayoutEffect(() => {
+            // This is the code for the Strict Mode.
+            // In Strict Mode, if the listener is not registered again in the effect phase,
+            // the listener is not finally registered.
+            if (!listenersMap.has(id)) {
+                listenersMap.set(id, forceUpdate)
+            }
+            return () => void listenersMap.delete(id)
+        }, [])
 
         return <>{Array.from(portalsMap.values())}</>
     }
