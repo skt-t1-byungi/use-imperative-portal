@@ -33,7 +33,7 @@ function newInternalContextValue() {
         for (const fn of listenersMap.values()) fn()
     }
 
-    const openPortal: PortalOpener = render => {
+    const openPortal: PortalOpener = node => {
         const id = uid++
         // It is not strict but expected to be enough.
         if (!Number.isSafeInteger(uid)) {
@@ -43,7 +43,7 @@ function newInternalContextValue() {
         const argsRef: MutableRefObject<any> = createRef()
         const updaterRef: MutableRefObject<(() => void) | null> = createRef()
 
-        portalsMap.set(id, <Portal key={id} render={render} argsRef={argsRef} updaterRef={updaterRef} />)
+        portalsMap.set(id, <Portal key={id} node={node} argsRef={argsRef} updaterRef={updaterRef} />)
         dispatch()
 
         return {
@@ -69,21 +69,21 @@ function newInternalContextValue() {
 }
 
 function Portal({
-    render,
+    node,
     argsRef,
     updaterRef,
 }: {
-    render: Renderer | ReactNode
+    node: Renderer | ReactNode
     argsRef: MutableRefObject<any>
     updaterRef: MutableRefObject<any>
 }) {
     updaterRef.current = useForceUpdate()
-    return <>{typeof render === 'function' ? render(...((argsRef.current ?? []) as Parameters<Renderer>)) : render}</>
+    return <>{typeof node === 'function' ? node(...((argsRef.current ?? []) as Parameters<Renderer>)) : node}</>
 }
 
-const INTERNAL_CONTEXT_KEY = Symbol('context')
-
 type InternalContextValue = ReturnType<typeof newInternalContextValue>
+
+const INTERNAL_CONTEXT_KEY = Symbol('context')
 
 export function createPortalContext() {
     const ctx = createContext<InternalContextValue | null>(null)
