@@ -36,6 +36,8 @@ function Demo() {
 }
 ```
 
+See a [Demo](https://codesandbox.io/s/use-imperative-portal-example-35g5mc).
+
 ## Getting Started
 
 Install the package in your project.
