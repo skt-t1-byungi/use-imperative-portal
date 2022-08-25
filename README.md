@@ -1,6 +1,6 @@
 # use-imperative-portal
 
-![https://npm.im/use-imperative-portal](https://badgen.net/npm/v/use-imperative-portal)
+[![npm](https://badgen.net/npm/v/use-imperative-portal)](https://npm.im/use-imperative-portal)
 
 Imperative React hooks for Portals
 
