@@ -1,6 +1,7 @@
 # use-imperative-portal
 
-[![npm](https://badgen.net/npm/v/use-imperative-portal)](https://npm.im/use-imperative-portal)
+[![npm](https://flat.badgen.net/npm/v/use-imperative-portal)](https://www.npmjs.com/package/use-imperative-portal)
+[![npm](https://flat.badgen.net/npm/license/use-imperative-portal)](https://github.com/skt-t1-byungi/use-imperative-portal/blob/master/LICENSE)
 
 Imperative React hooks for Portals
 
@@ -79,8 +80,8 @@ Output
 
 ```html
 <div>aaa</div>
-<div>bbb</div>
-<div>ccc</div>
+<p>bbb</p>
+<p>ccc</p>
 ```
 
 ## API
@@ -149,7 +150,7 @@ portal.close()
 console.log(portal.isClosed) // => true
 ```
 
-### \<PortalProvider withEndpoint={true} />
+### \<PortalProvider />
 
 This is a Provider component that shares the portal context.
 
@@ -175,7 +176,7 @@ If `withEndpoint` is `false`, the endpoint automatically specified in the provid
 
 This is useful when setting the endpoint directly.
 
-### PortalEndpoint
+### \<PortalEndpoint />
 
 `ReactNode`, which is passed to the portal, is rendered to the place where this component is located.
 This is useful when you want to change the endpoint position.

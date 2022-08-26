@@ -20,9 +20,9 @@ export interface Portal<UpdaterArgs extends any[] = []> {
     close(): void
 }
 
-export type PortalOpener = <R extends Renderer | ReactNode>(
-    render: R
-) => Portal<R extends Renderer ? Parameters<R> : []>
+export type PortalOpener = <Node extends Renderer | ReactNode>(
+    node: Node
+) => Portal<Node extends Renderer ? Parameters<Node> : []>
 
 function newInternalContextValue() {
     let uid = 0
