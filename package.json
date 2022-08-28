@@ -48,5 +48,6 @@
     },
     "peerDependencies": {
         "react": ">=18"
-    }
+    },
+    "license": "MIT"
 }

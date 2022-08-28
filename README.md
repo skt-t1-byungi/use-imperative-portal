@@ -1,9 +1,13 @@
 # use-imperative-portal
 
-[![npm](https://flat.badgen.net/npm/v/use-imperative-portal)](https://www.npmjs.com/package/use-imperative-portal)
-[![npm](https://flat.badgen.net/npm/license/use-imperative-portal)](https://github.com/skt-t1-byungi/use-imperative-portal/blob/master/LICENSE)
+[![version](https://img.shields.io/npm/v/use-imperative-portal.svg?style=flat-square)](https://npmjs.org/use-imperative-portal)
+[![mingzip size](https://img.shields.io/bundlephobia/minzip/use-imperative-portal)](https://bundlephobia.com/result?p=use-imperative-portal)
+[![license](https://img.shields.io/npm/l/use-imperative-portal?color=%23007a1f&style=flat-square)](https://github.com//skt-t1-byungi/graphs/contributors)
 
 Imperative React hooks for Portals
+
+-   React >=18
+-   Supports React Native
 
 ## Example
 
