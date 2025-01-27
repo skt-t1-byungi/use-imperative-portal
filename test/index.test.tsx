@@ -1,6 +1,7 @@
 import { describe, expect, it, test } from 'vitest'
 import { act, render } from '@testing-library/react'
 import { Portal, PortalOpener, PortalProvider, useImperativePortal } from '../src/index'
+import { Fragment, StrictMode } from 'react'
 
 describe('open, close', () => {
     const t = renderTester()
@@ -37,7 +38,7 @@ test('update', () => {
 })
 
 test('multiple', () => {
-    const t = renderTester()
+    const t = renderTester({ strict: false })
     let p1: Portal<[string]>
     let p2: Portal<[string]>
     let p1Calls = 0 // for performance
@@ -62,17 +63,20 @@ test('multiple', () => {
     expect(t.queryByText(/^MyWORLD$/)).not.toBeNull()
 })
 
-function renderTester() {
+function renderTester({ strict = true }: { strict?: boolean } = {}) {
     let result: PortalOpener
     function Tester() {
         result = useImperativePortal()
         return null
     }
+    const Wrapper = strict ? StrictMode : Fragment
     return Object.assign(
         render(
-            <PortalProvider>
-                <Tester />
-            </PortalProvider>
+            <Wrapper>
+                <PortalProvider>
+                    <Tester />
+                </PortalProvider>
+            </Wrapper>
         ),
         {
             hook: {

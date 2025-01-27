@@ -1,15 +1,14 @@
 import {
     createContext,
     createRef,
-    MutableRefObject,
     PropsWithChildren,
     ReactElement,
     ReactNode,
+    RefObject,
     useContext,
-    useId,
-    useLayoutEffect,
     useReducer,
-    useRef,
+    useState,
+    useSyncExternalStore,
 } from 'react'
 
 type Renderer = (...args: any) => ReactNode
@@ -27,10 +26,13 @@ export type PortalOpener = <Node extends Renderer | ReactNode>(
 function newInternalContextValue() {
     let uid = 0
     const portalsMap = new Map<number, ReactElement>()
-    const listenersMap = new Map<string, () => void>()
+    const listeners = new Set<() => void>()
+
+    let snapshot: ReactElement[] = []
 
     function dispatch() {
-        for (const fn of listenersMap.values()) fn()
+        snapshot = Array.from(portalsMap.values())
+        for (const fn of listeners) fn()
     }
 
     const openPortal: PortalOpener = node => {
@@ -40,8 +42,8 @@ function newInternalContextValue() {
             uid = Number.MIN_SAFE_INTEGER
         }
 
-        const argsRef: MutableRefObject<any> = createRef()
-        const updaterRef: MutableRefObject<(() => void) | null> = createRef()
+        const argsRef = createRef()
+        const updaterRef = createRef<() => void>()
 
         portalsMap.set(id, <Portal key={id} node={node} argsRef={argsRef} updaterRef={updaterRef} />)
         dispatch()
@@ -65,7 +67,16 @@ function newInternalContextValue() {
         }
     }
 
-    return { portalsMap, listenersMap, openPortal }
+    return {
+        openPortal,
+        subscribe(fn: () => void) {
+            listeners.add(fn)
+            return () => void listeners.delete(fn)
+        },
+        getSnapshot() {
+            return snapshot
+        },
+    }
 }
 
 function Portal({
@@ -74,8 +85,8 @@ function Portal({
     updaterRef,
 }: {
     node: Renderer | ReactNode
-    argsRef: MutableRefObject<any>
-    updaterRef: MutableRefObject<any>
+    argsRef: RefObject<any>
+    updaterRef: RefObject<any>
 }) {
     updaterRef.current = useForceUpdate()
     return <>{typeof node === 'function' ? node(...((argsRef.current ?? []) as Parameters<Renderer>)) : node}</>
@@ -89,8 +100,9 @@ export function createPortalContext() {
     const ctx = createContext<InternalContextValue | null>(null)
 
     function Provider({ children, withEndpoint = true }: PropsWithChildren<{ withEndpoint?: boolean }>) {
+        const [ctxValue] = useState(() => newInternalContextValue())
         return (
-            <ctx.Provider value={(useRef<InternalContextValue>().current ??= newInternalContextValue())}>
+            <ctx.Provider value={ctxValue}>
                 {children}
                 {withEndpoint && <Endpoint />}
             </ctx.Provider>
@@ -102,26 +114,9 @@ export function createPortalContext() {
         if (!value) {
             throw new Error('`Endpoint` must be used within PortalProvider')
         }
-
-        const { listenersMap, portalsMap } = value
-        const id = useId()
-        const forceUpdate = useForceUpdate()
-
-        // Defense in advance in case the portal opens during the render phase.
-        if (!listenersMap.has(id)) {
-            listenersMap.set(id, forceUpdate)
-        }
-        useLayoutEffect(() => {
-            // This is the code for the Strict Mode.
-            // In Strict Mode, if the listener is not registered again in the effect phase,
-            // the listener is not finally registered.
-            if (!listenersMap.has(id)) {
-                listenersMap.set(id, forceUpdate)
-            }
-            return () => void listenersMap.delete(id)
-        }, [])
-
-        return <>{Array.from(portalsMap.values())}</>
+        const { subscribe, getSnapshot } = value
+        const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+        return <>{snapshot}</>
     }
 
     return { [INTERNAL_CONTEXT_KEY]: ctx, Provider, Endpoint }
