@@ -39,10 +39,9 @@ function PaymentButton() {
 
         try {
             await processPayment()
-        } catch (error) {
-            portal.update(<ErrorPaymentMessage onClose={() => portal.close()} retry={handlePay} />)
-        } finally {
             portal.close()
+        } catch (error) {
+            portal.update(<ErrorPaymentMessage onClose={portal.close} />)
         }
     }
 
