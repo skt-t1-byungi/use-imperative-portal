@@ -135,7 +135,6 @@ function openPortal(node: ReactNode | ((...args) => ReactNode)): Portal
     -   `update(...args)`: Update portal content
     -   `close()`: Remove portal
     -   `isClosed`: Boolean state
-    -   `onClose?: () => void`: Optional cleanup callback
 
 ### `createPortalContext()`
 
