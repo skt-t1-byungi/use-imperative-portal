@@ -79,12 +79,15 @@ function ProgressTracker() {
     const startProcess = () => {
         const portal = openPortal((percent = 0) => <ProgressBar value={percent} />)
 
-        // Simulate progress
+        let n = 0
         const interval = setInterval(() => {
-            portal.update(prev => prev + 10)
+            portal.update(n++)
         }, 1000)
 
-        portal.onClose = () => clearInterval(interval)
+        setTimeout(() => {
+            portal.close()
+            clearInterval(interval)
+        }, 100_000)
     }
 
     return <button onClick={startProcess}>Start</button>
@@ -101,9 +104,11 @@ const NotificationContext = createPortalContext()
 function Root() {
     return (
         <>
-            <ModalContext.Endpoint />
-            <NotificationContext.Endpoint />
+            <aside>
+                <NotificationContext.Endpoint />
+            </aside>
             <App />
+            <ModalContext.Endpoint />
         </>
     )
 }
@@ -159,7 +164,7 @@ Traditional portal solutions often:
 **use-imperative-portal** solves these with:
 
 -   🚀 Direct imperative control
--   🧭 Lifecycle awareness
+-   🧭 Lifecycle awareness via `isClosed` checks
 -   🏝️ Context isolation
 -   📦 Minimal footprint (0.8kB!)
 
