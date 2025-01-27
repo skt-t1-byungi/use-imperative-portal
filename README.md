@@ -41,9 +41,8 @@ function PaymentButton() {
 
         try {
             await processPayment()
+        } finally {
             portal.close()
-        } catch (error) {
-            portal.update(<ErrorMessage error={error} />)
         }
     }
 
