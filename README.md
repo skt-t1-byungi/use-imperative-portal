@@ -35,13 +35,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 function PaymentButton() {
     const handlePay = async () => {
+        // 1) Open the portal
         const portal = openPortal(<ProcessingSpinner />)
 
         try {
+            // 2) Do something while the portal is open
             await processPayment()
+        } finally {
+            // 3) Close the portal when done
             portal.close()
-        } catch (error) {
-            portal.update(<ErrorPaymentMessage onClose={portal.close} />)
         }
     }
 
