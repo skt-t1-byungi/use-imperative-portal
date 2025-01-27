@@ -25,22 +25,42 @@ describe('open, close', () => {
     })
 })
 
-test('update', async () => {
-    const result = render(
-        <StrictMode>
-            <PortalEndpoint />
-        </StrictMode>
-    )
-    expect(result.queryByText('hello')).toBeNull()
+describe('update', async () => {
+    it('function renderer', async () => {
+        const result = render(
+            <StrictMode>
+                <PortalEndpoint />
+            </StrictMode>
+        )
+        expect(result.queryByText('hello')).toBeNull()
 
-    const portal = await act(() => openPortal((str = 'hello') => str))
-    expect(result.queryByText(/^hello$/)).not.toBeNull()
+        const portal = await act(() => openPortal((str = 'hello') => str))
+        expect(result.queryByText(/^hello$/)).not.toBeNull()
 
-    act(() => portal.update('world'))
-    expect(result.queryByText(/^world$/)).not.toBeNull()
+        act(() => portal.update('world'))
+        expect(result.queryByText(/^world$/)).not.toBeNull()
 
-    // for cleanup
-    portal.close()
+        // for cleanup
+        portal.close()
+    })
+
+    it('react node renderer', async () => {
+        const result = render(
+            <StrictMode>
+                <PortalEndpoint />
+            </StrictMode>
+        )
+        expect(result.queryByText('hello')).toBeNull()
+
+        const portal = await act(() => openPortal(<div>hello</div>))
+        expect(result.queryByText(/^hello$/)).not.toBeNull()
+
+        act(() => portal.update(<div>world</div>))
+        expect(result.queryByText(/^world$/)).not.toBeNull()
+
+        // for cleanup
+        portal.close()
+    })
 })
 
 test('multiple', async () => {

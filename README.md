@@ -4,43 +4,43 @@
 [![minzip size](https://img.shields.io/bundlephobia/minzip/use-imperative-portal?label=size)](https://bundlephobia.com/result?p=use-imperative-portal)
 [![license](https://img.shields.io/npm/l/use-imperative-portal?color=%23007a1f&style=flat-square)](https://github.com/skt-t1-byungi/use-imperative-portal/blob/master/LICENSE)
 
-Imperative portal management with surgical precision. Control React portals like never before - **under 1kB gzipped!**
+Manage React portals imperatively with minimal overhead. A single function call lets you open, update, and close portals.
 
 ## Features ✨
 
--   💎 **Tiny footprint** - 0.6kB gzipped, zero dependencies
--   🎮 **Imperative API** - Open/update/close portals with function calls
--   🧠 **Lifecycle aware** - Always know portal state with `isClosed` checks
--   🌐 **Universal** - Works in React DOM _and_ React Native
--   🔀 **Multi-context** - Isolate portals for modals, toasts, etc
--   🛡 **Type-safe** - Full TypeScript support
+-   🚀 Tiny (0.6kB gzipped) with no external dependencies
+-   🧩 Imperative API for opening, updating, and closing
+-   🔎 Lifecycle awareness through `isClosed` property
+-   🌐 Supports React DOM and React Native
+-   🔀 Multiple isolated contexts (useful for modals, toasts, etc.)
+-   💻 Includes TypeScript definitions
 
-## Installation 📦
+## Installation
 
 ```bash
 npm install use-imperative-portal
 ```
 
-## Quick Start ⚡
+## Quick Start
 
 ```jsx
 import { openPortal, PortalEndpoint } from 'use-imperative-portal'
 
-// Add to root layout
 ReactDOM.createRoot(document.getElementById('root')).render(
     <>
         <App />
-        <PortalEndpoint /> {/* 👈 Portal destination */}
+        <PortalEndpoint /> {/* The portal destination */}
     </>
 )
 
-// Use anywhere
 function PaymentButton() {
     const handlePay = async () => {
         const portal = openPortal(<ProcessingSpinner />)
 
         try {
             await processPayment()
+        } catch (error) {
+            portal.update(<ErrorPaymentMessage onClose={() => portal.close()} retry={handlePay} />)
         } finally {
             portal.close()
         }
@@ -50,7 +50,28 @@ function PaymentButton() {
 }
 ```
 
-## Advanced Recipes 🧪
+To close a portal from inside a component, pass a function so you can call `portal.close()` later:
+
+```jsx
+function CancelableModal({ onClose }) {
+    return (
+        <div>
+            <p>Some content here...</p>
+            <button onClick={onClose}>Cancel</button>
+        </div>
+    )
+}
+
+function Example() {
+    const handleOpen = () => {
+        const portal = openPortal(() => <CancelableModal onClose={() => portal.close()} />)
+    }
+
+    return <button onClick={handleOpen}>Open Cancelable Modal</button>
+}
+```
+
+## Advanced Recipes
 
 ### Global Error Handler (Non-component)
 
@@ -76,11 +97,12 @@ export const apiClient = {
 ```jsx
 function ProgressTracker() {
     const startProcess = () => {
+        // If openPortal is given a function, portal.update will pass that function new arguments
         const portal = openPortal((percent = 0) => <ProgressBar value={percent} />)
 
-        let n = 0
+        let progress = 0
         const interval = setInterval(() => {
-            portal.update(n++)
+            portal.update(progress++)
         }, 1000)
 
         setTimeout(() => {
@@ -99,7 +121,6 @@ function ProgressTracker() {
 const ModalContext = createPortalContext()
 const NotificationContext = createPortalContext()
 
-// Layout
 function Root() {
     return (
         <>
@@ -112,7 +133,6 @@ function Root() {
     )
 }
 
-// Usage
 function App() {
     const showModal = () => ModalContext.openPortal(<Dialog />)
     const notify = () => NotificationContext.openPortal(<Toast />)
@@ -126,21 +146,24 @@ function App() {
 }
 ```
 
-## API Reference 📚
+## API Reference ⭐
 
-### `openPortal(node)`
+### openPortal(node)
 
 ```ts
-function openPortal(node: ReactNode | ((...args) => ReactNode)): Portal
+function openPortal<Node extends ReactNode | ((...args: any[]) => ReactNode)>(
+    node: Node
+): Portal<Node extends (...args: any[]) => ReactNode ? Parameters<Node> : [ReactNode]>
 ```
 
--   `node`: Static content or parameterized render function
--   Returns `Portal` object with:
-    -   `update(...args)`: Update portal content
-    -   `close()`: Remove portal
-    -   `isClosed`: Boolean state
+• `node`: A `ReactNode` or a function that returns a `ReactNode`.
+• Returns a `Portal` object:
 
-### `createPortalContext()`
+-   `portal.update(...args)`: Updates content with new arguments
+-   `portal.close()`: Closes the portal
+-   `portal.isClosed`: Indicates whether the portal has been closed
+
+### createPortalContext()
 
 ```ts
 function createPortalContext(): {
@@ -149,24 +172,26 @@ function createPortalContext(): {
 }
 ```
 
-Creates isolated portal environment with own endpoint
+Creates an isolated portal environment with its own `openPortal` and `Endpoint`.
 
 ## Why This Library? 🏆
 
 Traditional portal solutions often:
 
 -   Require complex component hierarchies
--   Lack proper lifecycle management
--   Force single portal destination
--   Come with heavy dependencies
+-   Lack clear lifecycle management
+-   Offer a single portal destination
+-   Include heavier dependencies
 
-**use-imperative-portal** solves these with:
+use-imperative-portal tackles these by:
 
--   🚀 Direct imperative control
--   🧭 Lifecycle awareness via `isClosed` checks
--   🏝️ Context isolation
--   📦 Minimal footprint (0.6kB!)
+-   ✨ Allowing direct imperative control
+-   🔎 Exposing lifecycle awareness via `isClosed`
+-   🏝️ Supporting isolated contexts for different use cases
+-   📦 Keeping footprint small and usage simple
 
-## License 📄
+---
+
+## License
 
 MIT © [skt-t1-byungi](https://github.com/skt-t1-byungi)

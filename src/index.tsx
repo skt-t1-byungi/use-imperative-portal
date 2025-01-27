@@ -1,14 +1,16 @@
 import { createRef, ReactElement, ReactNode, RefObject, useReducer, useSyncExternalStore } from 'react'
 
-export interface Portal<UpdaterArgs extends any[] = []> {
+export interface Portal<UpdaterArgs extends any[] = [ReactNode]> {
     readonly isClosed: boolean
     update(...args: UpdaterArgs): void
     close(): void
 }
+
 type Renderer<Args extends any[] = []> = (...args: Args) => ReactNode
+
 export type PortalOpener = <Node extends Renderer | ReactNode>(
     node: Node
-) => Portal<Node extends Renderer<infer Args> ? Args : []>
+) => Portal<Node extends Renderer<infer Args> ? Args : [ReactNode]>
 
 export function createPortalContext() {
     let uid = 0
@@ -28,7 +30,16 @@ export function createPortalContext() {
         const argsRef = createRef()
         const updaterRef = createRef<() => void>()
 
-        portalsMap.set(id, <Portal key={id} node={node} argsRef={argsRef} updaterRef={updaterRef} />)
+        let renderer: Renderer<any>
+        if (typeof node === 'function') {
+            renderer = node
+            argsRef.current = []
+        } else {
+            renderer = (n: ReactNode) => n
+            argsRef.current = [node]
+        }
+
+        portalsMap.set(id, <Portal key={id} renderer={renderer} argsRef={argsRef} updaterRef={updaterRef} />)
         dispatch()
 
         return {
@@ -67,17 +78,17 @@ export function createPortalContext() {
     return { openPortal, Endpoint }
 }
 
-function Portal({
-    node,
+function Portal<Args extends any[]>({
+    renderer,
     argsRef,
     updaterRef,
 }: {
-    node: Renderer | ReactNode
-    argsRef: RefObject<any>
+    renderer: Renderer<Args>
+    argsRef: RefObject<Args>
     updaterRef: RefObject<any>
 }) {
     updaterRef.current = useReducer(() => ({}), {})[1]
-    return <>{typeof node === 'function' ? node(...((argsRef.current ?? []) as Parameters<Renderer>)) : node}</>
+    return <>{renderer(...argsRef.current)}</>
 }
 
 export const { Endpoint: PortalEndpoint, openPortal } = createPortalContext()
