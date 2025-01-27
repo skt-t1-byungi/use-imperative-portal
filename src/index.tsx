@@ -18,16 +18,12 @@ export function createPortalContext() {
     let snapshot: ReactElement[] = []
 
     function dispatch() {
-        snapshot = Array.from(portalsMap.values())
+        snapshot = [...portalsMap.values()]
         for (const fn of listeners) fn()
     }
 
     const openPortal: PortalOpener = node => {
         const id = uid++
-        // It is not strict but expected to be enough.
-        if (!Number.isSafeInteger(uid)) {
-            uid = Number.MIN_SAFE_INTEGER
-        }
 
         const argsRef = createRef()
         const updaterRef = createRef<() => void>()
@@ -80,13 +76,8 @@ function Portal({
     argsRef: RefObject<any>
     updaterRef: RefObject<any>
 }) {
-    updaterRef.current = useForceUpdate()
+    updaterRef.current = useReducer(() => ({}), {})[1]
     return <>{typeof node === 'function' ? node(...((argsRef.current ?? []) as Parameters<Renderer>)) : node}</>
 }
 
-const defaultPortalContext = createPortalContext()
-export const { Endpoint: PortalEndpoint, openPortal } = defaultPortalContext
-
-function useForceUpdate() {
-    return useReducer(() => ({}), {})[1]
-}
+export const { Endpoint: PortalEndpoint, openPortal } = createPortalContext()
