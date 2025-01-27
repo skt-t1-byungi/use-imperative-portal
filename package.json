@@ -1,6 +1,6 @@
 {
     "name": "use-imperative-portal",
-    "description": "Imperative React hooks for Portals",
+    "description": "Imperative React portal control with lifecycle management in under 1kB",
     "version": "0.2.1",
     "keywords": [
         "react",
