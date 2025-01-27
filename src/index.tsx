@@ -11,17 +11,16 @@ import {
     useSyncExternalStore,
 } from 'react'
 
-type Renderer = (...args: any) => ReactNode
-
 export interface Portal<UpdaterArgs extends any[] = []> {
     readonly isClosed: boolean
     update(...args: UpdaterArgs): void
     close(): void
 }
 
+type Renderer<Args extends any[] = []> = (...args: Args) => ReactNode
 export type PortalOpener = <Node extends Renderer | ReactNode>(
     node: Node
-) => Portal<Node extends Renderer ? Parameters<Node> : []>
+) => Portal<Node extends Renderer<infer Args> ? Args : []>
 
 function newInternalContextValue() {
     let uid = 0

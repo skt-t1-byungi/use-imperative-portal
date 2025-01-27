@@ -1,4 +1,4 @@
-import { describe, expect, it, test } from 'vitest'
+import { describe, expect, expectTypeOf, it, test } from 'vitest'
 import { act, render } from '@testing-library/react'
 import { Portal, PortalOpener, PortalProvider, useImperativePortal } from '../src/index'
 import { Fragment, StrictMode } from 'react'
@@ -61,6 +61,14 @@ test('multiple', () => {
     })
     expect(p1Calls).toBe(2)
     expect(t.queryByText(/^MyWORLD$/)).not.toBeNull()
+})
+
+test.skip('type check', () => {
+    const openPortal = useImperativePortal()
+    const p1 = openPortal((str = 'hello') => str)
+    expectTypeOf(p1.update).toEqualTypeOf<(str?: string) => void>()
+    const p2 = openPortal(({ title = 'hello' } = {}) => title)
+    expectTypeOf(p2.update).toEqualTypeOf<(p?: { title?: string }) => void>()
 })
 
 function renderTester({ strict = true }: { strict?: boolean } = {}) {
