@@ -8,7 +8,7 @@ Imperative portal management with surgical precision. Control React portals like
 
 ## Features ✨
 
--   💎 **Tiny footprint** - 0.8kB gzipped, zero dependencies
+-   💎 **Tiny footprint** - 0.6kB gzipped, zero dependencies
 -   🎮 **Imperative API** - Open/update/close portals with function calls
 -   🧠 **Lifecycle aware** - Always know portal state with `isClosed` checks
 -   🌐 **Universal** - Works in React DOM _and_ React Native
@@ -165,7 +165,7 @@ Traditional portal solutions often:
 -   🚀 Direct imperative control
 -   🧭 Lifecycle awareness via `isClosed` checks
 -   🏝️ Context isolation
--   📦 Minimal footprint (0.8kB!)
+-   📦 Minimal footprint (0.6kB!)
 
 ## License 📄
 
