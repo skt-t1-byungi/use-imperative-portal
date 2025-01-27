@@ -157,12 +157,12 @@ function openPortal<Node extends ReactNode | ((...args: any[]) => ReactNode)>(
 ): Portal<Node extends (...args: any[]) => ReactNode ? Parameters<Node> : [ReactNode]>
 ```
 
-• `node`: A `ReactNode` or a function that returns a `ReactNode`.
-• Returns a `Portal` object:
+-   `node`: A `ReactNode` or a function that returns a `ReactNode`.
+-   Returns a `Portal` object:
 
--   `portal.update(...args)`: Updates content with new arguments
--   `portal.close()`: Closes the portal
--   `portal.isClosed`: Indicates whether the portal has been closed
+    -   `portal.update(...args)`: Updates content with new arguments
+    -   `portal.close()`: Closes the portal
+    -   `portal.isClosed`: Indicates whether the portal has been closed
 
 ### createPortalContext()
 
