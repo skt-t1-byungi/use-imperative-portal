@@ -1,4 +1,25 @@
-import { createRef, ReactElement, ReactNode, RefObject, useReducer, useSyncExternalStore } from 'react'
+import { ReactNode, useSyncExternalStore } from 'react'
+
+function createStore<State>(state: State) {
+    const listeners = new Set<() => void>()
+    return {
+        subscribe(fn: () => void) {
+            listeners.add(fn)
+            return () => listeners.delete(fn)
+        },
+        update(next: State) {
+            state = next
+            for (const fn of listeners) fn()
+        },
+        getState() {
+            return state
+        },
+    }
+}
+
+type Store<State> = ReturnType<typeof createStore<State>>
+
+type EnforcedOptionalParamsFunction<F extends (...args: any[]) => any> = F extends () => any ? F : never
 
 export interface Portal<UpdaterArgs extends any[] = [ReactNode]> {
     readonly isClosed: boolean
@@ -6,89 +27,49 @@ export interface Portal<UpdaterArgs extends any[] = [ReactNode]> {
     close(): void
 }
 
-type Renderer<Args extends any[] = []> = (...args: Args) => ReactNode
-
-export type PortalOpener = <Node extends Renderer | ReactNode>(
-    node: Node
-) => Portal<Node extends Renderer<infer Args> ? Args : [ReactNode]>
+type Renderer<Args extends any[] = []> = EnforcedOptionalParamsFunction<(...args: Args) => ReactNode>
 
 export function createPortalContext() {
     let uid = 0
-    const portalsMap = new Map<number, ReactElement>()
-    const listeners = new Set<() => void>()
 
-    let snapshot: ReactElement[] = []
+    const portalsMap = new Map<number, ReactNode>()
+    const ctxStore = createStore<ReactNode[]>([])
 
-    function dispatch() {
-        snapshot = [...portalsMap.values()]
-        for (const fn of listeners) fn()
+    return {
+        openPortal<Node extends Renderer | ReactNode>(node: Node) {
+            type UpdateArgs = Node extends Renderer<infer A> ? A : [ReactNode?]
+
+            const id = uid++
+            const renderer = typeof node === 'function' ? (node as Renderer<[]>) : (n = node as ReactNode) => n
+            const portalStore = createStore<ReactNode>(renderer())
+
+            portalsMap.set(id, <Portal key={id} store={portalStore} />)
+            ctxStore.update([...portalsMap.values()])
+
+            return {
+                get isClosed() {
+                    return !portalsMap.has(id)
+                },
+                update(...args: UpdateArgs) {
+                    if (!portalsMap.has(id)) {
+                        throw new Error('Portal is closed')
+                    }
+                    portalStore.update(renderer(...args))
+                },
+                close() {
+                    portalsMap.delete(id)
+                    ctxStore.update([...portalsMap.values()])
+                },
+            }
+        },
+        Endpoint() {
+            return useSyncExternalStore(ctxStore.subscribe, ctxStore.getState, ctxStore.getState)
+        },
     }
-
-    const openPortal: PortalOpener = node => {
-        const id = uid++
-
-        const argsRef = createRef()
-        const updaterRef = createRef<() => void>()
-
-        let renderer: Renderer<any>
-        if (typeof node === 'function') {
-            renderer = node
-            argsRef.current = []
-        } else {
-            renderer = (n: ReactNode) => n
-            argsRef.current = [node]
-        }
-
-        portalsMap.set(id, <Portal key={id} renderer={renderer} argsRef={argsRef} updaterRef={updaterRef} />)
-        dispatch()
-
-        return {
-            get isClosed() {
-                return !portalsMap.has(id)
-            },
-            update(...args: any) {
-                if (!portalsMap.has(id)) {
-                    throw new Error('Portal is closed')
-                }
-                argsRef.current = args
-                updaterRef.current?.()
-            },
-            close() {
-                portalsMap.delete(id)
-                dispatch()
-                argsRef.current = updaterRef.current = null
-            },
-        }
-    }
-
-    function subscribe(fn: () => void) {
-        listeners.add(fn)
-        return () => void listeners.delete(fn)
-    }
-
-    function getSnapshot() {
-        return snapshot
-    }
-
-    function Endpoint() {
-        useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-        return <>{snapshot}</>
-    }
-
-    return { openPortal, Endpoint }
 }
 
-function Portal<Args extends any[]>({
-    renderer,
-    argsRef,
-    updaterRef,
-}: {
-    renderer: Renderer<Args>
-    argsRef: RefObject<Args>
-    updaterRef: RefObject<any>
-}) {
-    updaterRef.current = useReducer(() => ({}), {})[1]
-    return <>{renderer(...argsRef.current)}</>
+function Portal({ store }: { store: Store<ReactNode> }) {
+    return useSyncExternalStore(store.subscribe, store.getState, store.getState)
 }
 
-export const { Endpoint: PortalEndpoint, openPortal } = createPortalContext()
+export const { openPortal, Endpoint: PortalEndpoint } = createPortalContext()

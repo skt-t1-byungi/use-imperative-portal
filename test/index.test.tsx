@@ -95,4 +95,8 @@ test.skip('type check', () => {
     expectTypeOf(p1.update).toEqualTypeOf<(str?: string) => void>()
     const p2 = openPortal(({ title = 'hello' } = {}) => title)
     expectTypeOf(p2.update).toEqualTypeOf<(p?: { title?: string }) => void>()
+
+    // parameter is not optional
+    // @ts-expect-error
+    openPortal((str: string) => str)
 })
