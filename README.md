@@ -26,49 +26,33 @@ npm install use-imperative-portal
 ```jsx
 import { openPortal, PortalEndpoint } from 'use-imperative-portal'
 
+// Render endpoint once at root level
 ReactDOM.createRoot(document.getElementById('root')).render(
     <>
         <App />
-        <PortalEndpoint /> {/* The portal destination */}
+        <PortalEndpoint /> {/* Portals render here */}
     </>
 )
 
 function PaymentButton() {
     const handlePay = async () => {
-        // 1) Open the portal
-        const portal = openPortal(<ProcessingSpinner />)
+        // Open portal with initial content
+        const portal = openPortal(<div>Processing payment...</div>)
 
         try {
-            // 2) Do something while the portal is open
             await processPayment()
+            // Update portal content
+            portal.update(<div>Payment complete!</div>)
+        } catch (error) {
+            // Update with error state
+            portal.update(<div className="error">Payment failed!</div>)
         } finally {
-            // 3) Close the portal when done
-            portal.close()
+            // Close after 2 seconds
+            setTimeout(portal.close, 2000)
         }
     }
 
     return <button onClick={handlePay}>Pay Now</button>
-}
-```
-
-To close a portal from inside a component, pass a function so you can call `portal.close()` later:
-
-```jsx
-function CancelableModal({ onClose }) {
-    return (
-        <div>
-            <p>Some content here...</p>
-            <button onClick={onClose}>Cancel</button>
-        </div>
-    )
-}
-
-function Example() {
-    const handleOpen = () => {
-        const portal = openPortal(() => <CancelableModal onClose={() => portal.close()} />)
-    }
-
-    return <button onClick={handleOpen}>Open Cancelable Modal</button>
 }
 ```
 
@@ -95,28 +79,37 @@ export const apiClient = {
 
 ### Dynamic Content Update
 
+Pass a function to create updatable portals:
+
 ```jsx
 function ProgressTracker() {
-    const startProcess = () => {
-        // If openPortal is given a function, portal.update will pass that function new arguments
-        const portal = openPortal((percent = 0) => <ProgressBar value={percent} />)
+    const startUpload = () => {
+        // Create portal with dynamic content function
+        const portal = openPortal((percent = 0, status = 'Preparing') => (
+            <div>
+                <ProgressBar value={percent} />
+                <span>{status}</span>
+            </div>
+        ))
 
-        let progress = 0
-        const interval = setInterval(() => {
-            portal.update(progress++)
-        }, 1000)
-
-        setTimeout(() => {
-            portal.close()
-            clearInterval(interval)
-        }, 100_000)
+        simulateUpload({
+            onProgress: pct => {
+                portal.update(pct, 'Uploading...')
+            },
+            onComplete: () => {
+                portal.update(100, 'Processing')
+                setTimeout(portal.close, 1000)
+            },
+        })
     }
 
-    return <button onClick={startProcess}>Start</button>
+    return <button onClick={startUpload}>Start Upload</button>
 }
 ```
 
 ### Multi-context Isolation
+
+Create separate portal environments for different use cases:
 
 ```jsx
 const ModalContext = createPortalContext()
@@ -125,10 +118,10 @@ const NotificationContext = createPortalContext()
 function Root() {
     return (
         <>
-            <aside>
-                <NotificationContext.Endpoint />
-            </aside>
-            <App />
+            <NotificationContext.Endpoint />
+            <main>
+                <App />
+            </main>
             <ModalContext.Endpoint />
         </>
     )
@@ -149,31 +142,67 @@ function App() {
 
 ## API Reference ⭐
 
-### openPortal(node)
+### `openPortal(node?)`
 
-```ts
-function openPortal<Node extends ReactNode | ((...args: any[]) => ReactNode)>(
-    node: Node
-): Portal<Node extends (...args: any[]) => ReactNode ? Parameters<Node> : [ReactNode]>
-```
+Opens a new portal and returns a controller object to manage it.
 
--   `node`: A `ReactNode` or a function that returns a `ReactNode`.
--   Returns a `Portal` object:
+-   **Parameters**:
 
-    -   `portal.update(...args)`: Updates content with new arguments
-    -   `portal.close()`: Closes the portal
-    -   `portal.isClosed`: Indicates whether the portal has been closed
+    -   `node`: A React node (like JSX elements, strings, numbers) **or** a function that returns a React node.
+        -   When providing a function:
+            -   Must accept zero arguments initially (parameters should be optional)
+            -   Will be called immediately without arguments when opening the portal
+            -   Parameters can be passed later via `portal.update()`
 
-### createPortalContext()
+-   **Returns** an object with:
+    -   **`update(...args)`**: Updates the portal's content.
+        -   If `node` was a function, pass the same arguments expected by that function
+        -   If `node` was a static React node, pass a single argument with the new React node
+    -   **`close()`**: Closes the portal and removes it from the endpoint
+    -   **`isClosed`**: A boolean (read-only) that becomes `true` once the portal is closed
 
-```ts
-function createPortalContext(): {
-    openPortal: typeof openPortal
-    Endpoint: ComponentType
+### `PortalEndpoint`
+
+A React component that renders all active portals. Include this component once in your app's root or wherever portals should appear.
+
+```jsx
+function App() {
+    return (
+        <div>
+            <MainContent />
+            <PortalEndpoint /> {/* Portals render here */}
+        </div>
+    )
 }
 ```
 
-Creates an isolated portal environment with its own `openPortal` and `Endpoint`.
+### `createPortalContext()`
+
+Creates an independent portal environment for isolated groups (e.g., separate modal and notification systems).
+
+-   **Returns** an object containing:
+    -   **`openPortal`**: Function identical to the default `openPortal`, but scoped to this context.
+    -   **`Endpoint`**: Component where portals from this context will render.
+
+```jsx
+// Create separate contexts
+const ModalContext = createPortalContext()
+const ToastContext = createPortalContext()
+
+function App() {
+    return (
+        <>
+            <ModalContext.Endpoint /> {/* Modals render here */}
+            <ToastContext.Endpoint /> {/* Toasts render here */}
+            <MainApp />
+        </>
+    )
+}
+
+function openModal() {
+    ModalContext.openPortal(<Dialog />) // Opens in ModalContext's endpoint
+}
+```
 
 ## Why This Library? 🏆
 

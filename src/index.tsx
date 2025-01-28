@@ -57,8 +57,10 @@ export function createPortalContext() {
                     portalStore.update(renderer(...args))
                 },
                 close() {
-                    portalsMap.delete(id)
-                    ctxStore.update([...portalsMap.values()])
+                    if (portalsMap.has(id)) {
+                        portalsMap.delete(id)
+                        ctxStore.update([...portalsMap.values()])
+                    }
                 },
             }
         },
