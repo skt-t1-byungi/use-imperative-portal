@@ -69,8 +69,10 @@ export const apiClient = {
         try {
             return await axios.get(url)
         } catch (error) {
-            const portal = openPortal(<Toast message="API Error!" />)
-            setTimeout(portal.close, 5000)
+            const portal = openPortal(() => {
+                //  Access portal object in render function
+                return <Toast message="API Error!" onClose={portal.close} />
+            })
             throw error
         }
     },
@@ -142,7 +144,7 @@ function App() {
 
 ## API Reference ⭐
 
-### `openPortal(node?)`
+### `openPortal(node)`
 
 Opens a new portal and returns a controller object to manage it.
 

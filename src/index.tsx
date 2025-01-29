@@ -1,6 +1,7 @@
 import { ReactNode, useSyncExternalStore } from 'react'
 
-function createStore<State>(state: State) {
+function createStore<State>(init: () => State) {
+    let state: State
     const listeners = new Set<() => void>()
     return {
         subscribe(fn: () => void) {
@@ -12,7 +13,7 @@ function createStore<State>(state: State) {
             for (const fn of listeners) fn()
         },
         getState() {
-            return state
+            return (state ??= init())
         },
     }
 }
@@ -31,9 +32,8 @@ type Renderer<Args extends any[] = []> = EnforcedOptionalParamsFunction<(...args
 
 export function createPortalContext() {
     let uid = 0
-
     const portalsMap = new Map<number, ReactNode>()
-    const ctxStore = createStore<ReactNode[]>([])
+    const ctxStore = createStore<ReactNode[]>(() => [])
 
     return {
         openPortal<Node extends Renderer | ReactNode>(node: Node) {
@@ -41,7 +41,7 @@ export function createPortalContext() {
 
             const id = uid++
             const renderer = typeof node === 'function' ? (node as Renderer<[]>) : (n = node as ReactNode) => n
-            const portalStore = createStore<ReactNode>(renderer())
+            const portalStore = createStore<ReactNode>(renderer)
 
             portalsMap.set(id, <Portal key={id} store={portalStore} />)
             ctxStore.update([...portalsMap.values()])

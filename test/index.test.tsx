@@ -100,3 +100,12 @@ test.skip('type check', () => {
     // @ts-expect-error
     openPortal((str: string) => str)
 })
+
+test('function renderer should be able to use portal object', () => {
+    render(<PortalEndpoint />)
+    expect(() => {
+        const portal = openPortal(() => <div onClick={portal.close} />)
+        // cleanup
+        portal.close()
+    }).not.toThrow()
+})
