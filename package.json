@@ -1,7 +1,7 @@
 {
     "name": "use-imperative-portal",
-    "description": "Imperative React portals in 0.6kB: Open, update, close with lifecycle control & multi-context support",
-    "version": "1.0.7",
+    "description": "0.6kB portals for React. Open anywhere",
+    "version": "1.0.8",
     "keywords": [
         "react",
         "portal",
